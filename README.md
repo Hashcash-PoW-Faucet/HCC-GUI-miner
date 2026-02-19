@@ -61,20 +61,6 @@ requests
 
 > Note: Python GUI apps are generally built **on the target OS** (or in CI runners). True cross-compiling is uncommon.
 
-### macOS (Apple Silicon / arm64)
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt pyinstaller
-
-pyinstaller --noconsole --onefile --name hcc_gui_miner_mac_arm64_0.4.0 hcc_gui_miner.py
-```
-
-Output:
-
-- `dist/hcc_gui_miner_mac_arm64_0.4.0`
-
 ### Windows (amd64)
 
 ```powershell
@@ -88,6 +74,20 @@ pyinstaller --noconsole --onefile --name hcc_gui_miner_win_amd64_0.4.0.exe hcc_g
 Output:
 
 - `dist\hcc_gui_miner_win_amd64_0.4.0.exe`
+
+### macOS (Apple Silicon / arm64)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt pyinstaller
+
+pyinstaller --noconsole --onefile --name hcc_gui_miner_mac_arm64_0.4.0 hcc_gui_miner.py
+```
+
+Output:
+
+- `dist/hcc_gui_miner_mac_arm64_0.4.0`
 
 ### Linux (amd64)
 
