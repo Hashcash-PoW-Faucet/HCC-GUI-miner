@@ -31,7 +31,7 @@ Click **Mine**. If **Auto-download latest miner** is enabled, the GUI will downl
 
 ---
 
-## Build from source (developer)
+## Build from source
 
 This GUI is written in Python (Tkinter). For distributing a standalone app/binary we recommend **PyInstaller**.
 
