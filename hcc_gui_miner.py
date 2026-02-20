@@ -30,7 +30,8 @@ default_config = {
             "private_key": "",
             "threads": "0",
             "auto_download": True,
-            "extreme": False
+            "extreme": False,
+            "potato": False
         }
     }
 }
@@ -56,7 +57,8 @@ def save_config(profile_name):
         'private_key': private_key_entry.get(),
         'threads': threads_entry.get(),
         'auto_download': bool(auto_download_var.get()),
-        'extreme': bool(extreme_mode_var.get())
+        'extreme': bool(extreme_mode_var.get()),
+        'potato': bool(potato_mode_var.get())
     }
 
     with open(config_file, 'w') as file:
@@ -103,6 +105,7 @@ def load_config(profile_name):
 
     auto_download_var.set(bool(profile.get('auto_download', True)))
     extreme_mode_var.set(bool(profile.get('extreme', False)))
+    potato_mode_var.set(bool(profile.get('potato', False)))
 
 
 def load_profile_names():
@@ -169,7 +172,7 @@ def default_miner_path():
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         # Prefer a simple local name if user placed it next to the GUI.
-        candidates = ['hhc_miner.exe', 'hhc_miner', 'faucet_miner.exe', 'faucet_miner']
+        candidates = ['hcc_miner.exe', 'hcc_miner', 'faucet_miner.exe', 'faucet_miner']
         for name in candidates:
             candidate = os.path.join(script_dir, name)
             if os.path.exists(candidate):
@@ -184,7 +187,7 @@ def resolve_miner_exe():
     """Resolve miner path from UI. If empty, use default. If relative, try script dir first, then PATH."""
     p = miner_path_entry.get().strip()
     if not p:
-        p = default_miner_path() or 'hhc_miner.exe' if os.name == 'nt' else 'hhc_miner'
+        p = default_miner_path() or 'hcc_miner.exe' if os.name == 'nt' else 'hcc_miner'
 
     # If relative, try script directory.
     if not os.path.isabs(p):
@@ -316,7 +319,7 @@ def ensure_latest_miner(log_fn):
     version = tag[1:] if tag.startswith('v') else tag
 
     os_id, arch, ext = detect_os_arch()
-    asset_name = f"hhc_miner_{os_id}_{arch}_{version}{ext}"
+    asset_name = f"hcc_miner_{os_id}_{arch}_{version}{ext}"
 
     asset = find_asset(rel, asset_name)
     if not asset:
@@ -396,6 +399,13 @@ def start_mining():
         mine_button.config(state=tk.NORMAL)
         return
 
+    # Modes are mutually exclusive
+    if extreme_mode_var.get() and potato_mode_var.get():
+        output_textbox.insert(tk.END, "ERROR: EXTREME and POTATO mode cannot be enabled at the same time.\n")
+        update_mining_status("Error: Invalid mode selection")
+        mine_button.config(state=tk.NORMAL)
+        return
+
     # Auto-download latest miner if enabled and no explicit path was set
     if auto_download_var.get() and not miner_path_entry.get().strip():
         try:
@@ -430,6 +440,8 @@ def start_mining():
     ]
     if extreme_mode_var.get():
         command.append("-extreme")
+    if potato_mode_var.get():
+        command.append("-potato")
 
     # Debug: Log mode + command into the GUI output (so we can verify flags are passed)
 #    mode = "EXTREME" if extreme_mode_var.get() else "normal"
@@ -546,17 +558,31 @@ auto_download_var = tk.BooleanVar(value=True)
 auto_download_cb = tk.Checkbutton(root, text="Auto-download latest miner (GitHub Releases)", variable=auto_download_var)
 auto_download_cb.grid(row=4, column=0, columnspan=2, sticky='w')
 
+#
 # Extreme mode checkbox
 extreme_mode_var = tk.BooleanVar(value=False)
-extreme_mode_cb = tk.Checkbutton(root, text="EXTREME mode (higher difficulty but no cooldown and higher daily cap)", variable=extreme_mode_var)
+extreme_mode_cb = tk.Checkbutton(
+    root,
+    text="EXTREME mode (higher difficulty but no cooldown and higher daily cap)",
+    variable=extreme_mode_var,
+)
 extreme_mode_cb.grid(row=5, column=0, columnspan=2, sticky='w')
 
-tk.Label(root, text="Profile name:").grid(row=11)
+# Potato mode checkbox
+potato_mode_var = tk.BooleanVar(value=False)
+potato_mode_cb = tk.Checkbutton(
+    root,
+    text="POTATO mode (lower difficulty for low-power devices; counts toward normal daily cap; 5 min cooldown)",
+    variable=potato_mode_var,
+)
+potato_mode_cb.grid(row=6, column=0, columnspan=2, sticky='w')
+
+tk.Label(root, text="Profile name:").grid(row=12)
 profile_name_entry = tk.Entry(root, width=20)
-profile_name_entry.grid(row=12, column=0)
+profile_name_entry.grid(row=13, column=0)
 
 save_as_button = tk.Button(root, text="Save profile", command=save_config_with_name, width=20)
-save_as_button.grid(row=14, column=0)
+save_as_button.grid(row=15, column=0)
 
 selected_profile_name = tk.StringVar(root)
 
@@ -567,10 +593,10 @@ if profile_names:
 else:
     selected_profile_name.set("Default")
 
-tk.Label(root, text="Select existing profile:").grid(row=11, column=1)
+tk.Label(root, text="Select existing profile:").grid(row=12, column=1)
 
 profile_option_menu = tk.OptionMenu(root, selected_profile_name, *profile_names)
-profile_option_menu.grid(row=12, column=1)
+profile_option_menu.grid(row=13, column=1)
 
 
 def profile_selected(*args):
@@ -582,10 +608,10 @@ selected_profile_name.trace("w", profile_selected)
 
 output_textbox = tk.Text(root, bg='black', fg='white')
 # Full width (all columns) and expandable
-output_textbox.grid(row=10, column=0, columnspan=3, sticky='nsew', padx=6, pady=6)
+output_textbox.grid(row=11, column=0, columnspan=3, sticky='nsew', padx=6, pady=6)
 
 # Allow the log box row to expand when resizing the window
-root.grid_rowconfigure(10, weight=1)
+root.grid_rowconfigure(11, weight=1)
 
 # Create and place the "mine" button with custom color and font
 mine_button = tk.Button(root, text="Mine", command=start_mining, bg="green", font=custom_font, height=2)
@@ -597,7 +623,7 @@ stop_button.grid(row=9, column=2, columnspan=1, sticky='we', padx=6, pady=6)
 
 # Status label
 status_label = tk.Label(root, text="Status: Not Mining", font=custom_font)
-status_label.grid(row=15, column=0, columnspan=3)
+status_label.grid(row=16, column=0, columnspan=3)
 
 # Load the configuration at startup
 load_config(selected_profile_name.get())
